@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>北京智能出行决策助手</title>
     <meta name="description" content="基于实时路况的北京出行路线规划工具">
+    <script src="https://webapi.amap.com/maps?v=2.0&key=12c7f133b9e4a7fa4933479eb20ad90e&plugin=AMap.AutoComplete,AMap.PlaceSearch,AMap.Driving,AMap.Transfer,AMap.Walking,AMap.Riding"></script>
     <style>
         * {
             margin: 0;
@@ -13,73 +14,84 @@
         }
 
         body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', sans-serif;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            min-height: 100vh;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            padding: 20px;
+            font-family: 'Helvetica Neue', Arial, sans-serif;
+            background: #ffffff;
+            color: #000000;
+            line-height: 1.6;
         }
 
         .container {
-            background: white;
-            border-radius: 20px;
-            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
-            max-width: 600px;
-            width: 100%;
-            padding: 40px;
+            display: grid;
+            grid-template-columns: 400px 1fr;
+            height: 100vh;
+        }
+
+        .sidebar {
+            background: #000000;
+            color: #ffffff;
+            padding: 30px;
+            overflow-y: auto;
+            border-right: 3px solid #000000;
+        }
+
+        .header {
+            margin-bottom: 30px;
+            padding-bottom: 20px;
+            border-bottom: 2px solid #ffffff;
         }
 
         h1 {
-            color: #333;
-            font-size: 28px;
+            font-size: 24px;
+            font-weight: 700;
+            letter-spacing: -0.5px;
             margin-bottom: 10px;
-            text-align: center;
+            text-transform: uppercase;
         }
 
         .subtitle {
-            color: #666;
-            text-align: center;
-            margin-bottom: 30px;
-            font-size: 14px;
+            font-size: 12px;
+            opacity: 0.7;
+            letter-spacing: 1px;
         }
 
-        .status-card {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
-            padding: 20px;
-            border-radius: 12px;
-            margin-bottom: 30px;
-            text-align: center;
+        .status-section {
+            background: #ffffff;
+            color: #000000;
+            padding: 15px;
+            margin-bottom: 20px;
+            border: 2px solid #000000;
         }
 
-        .status-card h2 {
-            font-size: 18px;
-            margin-bottom: 10px;
+        .status-title {
+            font-size: 11px;
+            font-weight: 700;
+            letter-spacing: 1px;
+            margin-bottom: 8px;
+            text-transform: uppercase;
         }
 
         .status-indicator {
-            display: inline-flex;
+            display: flex;
             align-items: center;
             gap: 8px;
-            background: rgba(255, 255, 255, 0.2);
-            padding: 8px 16px;
-            border-radius: 20px;
-            font-size: 14px;
+            font-size: 13px;
         }
 
         .status-dot {
-            width: 10px;
-            height: 10px;
-            border-radius: 50%;
-            background: #4ade80;
-            animation: pulse 2s infinite;
+            width: 8px;
+            height: 8px;
+            background: #000000;
+            border-radius: 0;
         }
 
-        @keyframes pulse {
+        .status-dot.online {
+            background: #000000;
+            animation: blink 1.5s infinite;
+        }
+
+        @keyframes blink {
             0%, 100% { opacity: 1; }
-            50% { opacity: 0.5; }
+            50% { opacity: 0.3; }
         }
 
         .form-group {
@@ -88,142 +100,220 @@
 
         label {
             display: block;
-            color: #333;
-            font-weight: 500;
+            font-size: 11px;
+            font-weight: 700;
+            letter-spacing: 1px;
             margin-bottom: 8px;
-            font-size: 14px;
+            text-transform: uppercase;
+        }
+
+        .input-wrapper {
+            position: relative;
         }
 
         input, select {
             width: 100%;
-            padding: 12px 16px;
-            border: 2px solid #e5e7eb;
-            border-radius: 10px;
+            padding: 12px;
+            background: #ffffff;
+            color: #000000;
+            border: 2px solid #ffffff;
             font-size: 14px;
-            transition: all 0.3s;
             font-family: inherit;
+            transition: all 0.2s;
         }
 
         input:focus, select:focus {
             outline: none;
-            border-color: #667eea;
-            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+            border-color: #cccccc;
         }
 
-        .location-group {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 10px;
-        }
-
-        .btn {
-            width: 100%;
-            padding: 14px;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
-            border: none;
-            border-radius: 10px;
-            font-size: 16px;
-            font-weight: 600;
-            cursor: pointer;
-            transition: transform 0.2s, box-shadow 0.2s;
-            margin-top: 10px;
-        }
-
-        .btn:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 10px 20px rgba(102, 126, 234, 0.3);
-        }
-
-        .btn:active {
-            transform: translateY(0);
-        }
-
-        .btn:disabled {
-            opacity: 0.6;
-            cursor: not-allowed;
-            transform: none;
-        }
-
-        .result-card {
-            background: #f9fafb;
-            border-radius: 12px;
-            padding: 20px;
-            margin-top: 20px;
+        .autocomplete-results {
+            position: absolute;
+            top: 100%;
+            left: 0;
+            right: 0;
+            background: #ffffff;
+            border: 2px solid #000000;
+            border-top: none;
+            max-height: 200px;
+            overflow-y: auto;
+            z-index: 1000;
             display: none;
         }
 
-        .result-card.show {
+        .autocomplete-results.show {
             display: block;
-            animation: slideIn 0.3s ease-out;
         }
 
-        @keyframes slideIn {
-            from {
-                opacity: 0;
-                transform: translateY(10px);
-            }
-            to {
-                opacity: 1;
-                transform: translateY(0);
-            }
+        .autocomplete-item {
+            padding: 10px 12px;
+            cursor: pointer;
+            font-size: 13px;
+            border-bottom: 1px solid #eeeeee;
+        }
+
+        .autocomplete-item:hover {
+            background: #000000;
+            color: #ffffff;
+        }
+
+        .autocomplete-item:last-child {
+            border-bottom: none;
+        }
+
+        .transport-options {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+
+        .transport-btn {
+            padding: 12px;
+            background: #ffffff;
+            color: #000000;
+            border: 2px solid #ffffff;
+            font-size: 13px;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.2s;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .transport-btn:hover {
+            background: #000000;
+            color: #ffffff;
+            border-color: #000000;
+        }
+
+        .transport-btn.active {
+            background: #000000;
+            color: #ffffff;
+            border-color: #000000;
+        }
+
+        .btn-primary {
+            width: 100%;
+            padding: 15px;
+            background: #ffffff;
+            color: #000000;
+            border: 2px solid #ffffff;
+            font-size: 14px;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.2s;
+            margin-top: 10px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .btn-primary:hover {
+            background: #000000;
+            color: #ffffff;
+            border: 2px solid #ffffff;
+        }
+
+        .btn-primary:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .results-section {
+            margin-top: 20px;
+            padding: 20px;
+            background: #ffffff;
+            color: #000000;
+            border: 2px solid #ffffff;
+            display: none;
+        }
+
+        .results-section.show {
+            display: block;
         }
 
         .result-title {
-            color: #333;
-            font-size: 18px;
-            font-weight: 600;
+            font-size: 11px;
+            font-weight: 700;
+            letter-spacing: 1px;
             margin-bottom: 15px;
-            display: flex;
-            align-items: center;
-            gap: 8px;
+            text-transform: uppercase;
         }
 
-        .result-item {
-            background: white;
+        .route-item {
             padding: 15px;
-            border-radius: 8px;
+            background: #000000;
+            color: #ffffff;
             margin-bottom: 10px;
-            border-left: 4px solid #667eea;
+            border: 2px solid #000000;
         }
 
-        .result-item:last-child {
+        .route-item:last-child {
             margin-bottom: 0;
         }
 
-        .result-label {
-            color: #666;
-            font-size: 12px;
-            margin-bottom: 4px;
+        .route-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid #ffffff;
         }
 
-        .result-value {
-            color: #333;
+        .route-type {
+            font-size: 13px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .route-cost {
             font-size: 16px;
-            font-weight: 500;
+            font-weight: 700;
         }
 
-        .loading {
-            display: inline-block;
-            width: 16px;
-            height: 16px;
-            border: 3px solid rgba(255, 255, 255, 0.3);
-            border-radius: 50%;
-            border-top-color: white;
-            animation: spin 0.8s linear infinite;
+        .route-details {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 10px;
+            font-size: 12px;
         }
 
-        @keyframes spin {
-            to { transform: rotate(360deg); }
+        .route-detail {
+            text-align: center;
+        }
+
+        .detail-label {
+            opacity: 0.7;
+            margin-bottom: 4px;
+            text-transform: uppercase;
+            font-size: 10px;
+            letter-spacing: 0.5px;
+        }
+
+        .detail-value {
+            font-weight: 700;
+            font-size: 14px;
+        }
+
+        .map-container {
+            background: #f5f5f5;
+            position: relative;
+        }
+
+        #map {
+            width: 100%;
+            height: 100%;
         }
 
         .error-message {
-            background: #fee2e2;
-            color: #991b1b;
-            padding: 12px 16px;
-            border-radius: 8px;
+            background: #000000;
+            color: #ffffff;
+            padding: 15px;
             margin-top: 15px;
-            font-size: 14px;
+            border: 2px solid #000000;
+            font-size: 13px;
             display: none;
         }
 
@@ -231,218 +321,471 @@
             display: block;
         }
 
-        .footer {
-            text-align: center;
-            margin-top: 30px;
-            color: #999;
-            font-size: 12px;
-        }
+        @media (max-width: 768px) {
+            .container {
+                grid-template-columns: 1fr;
+                grid-template-rows: auto 1fr;
+            }
 
-        .footer a {
-            color: #667eea;
-            text-decoration: none;
-        }
-
-        .footer a:hover {
-            text-decoration: underline;
+            .sidebar {
+                height: auto;
+                max-height: 50vh;
+            }
         }
     </style>
 </head>
 <body>
     <div class="container">
-        <h1>🚗 北京智能出行决策助手</h1>
-        <p class="subtitle">基于实时路况的智能路线规划</p>
-
-        <div class="status-card">
-            <h2>系统状态</h2>
-            <div class="status-indicator">
-                <span class="status-dot"></span>
-                <span id="status-text">正在检查...</span>
+        <div class="sidebar">
+            <div class="header">
+                <h1>北京智能出行</h1>
+                <p class="subtitle">BEIJING COMMUTE OPTIMIZER</p>
             </div>
-        </div>
 
-        <form id="route-form">
-            <div class="form-group">
-                <label>起点位置</label>
-                <input type="text" id="start-name" placeholder="例如：天安门" required>
-                <div class="location-group">
-                    <input type="number" id="start-lng" placeholder="经度" step="0.000001" required>
-                    <input type="number" id="start-lat" placeholder="纬度" step="0.000001" required>
+            <div class="status-section">
+                <div class="status-title">System Status</div>
+                <div class="status-indicator">
+                    <div class="status-dot" id="status-dot"></div>
+                    <span id="status-text">检查中...</span>
                 </div>
             </div>
 
-            <div class="form-group">
-                <label>终点位置</label>
-                <input type="text" id="end-name" placeholder="例如：鸟巢" required>
-                <div class="location-group">
-                    <input type="number" id="end-lng" placeholder="经度" step="0.000001" required>
-                    <input type="number" id="end-lat" placeholder="纬度" step="0.000001" required>
+            <form id="route-form">
+                <div class="form-group">
+                    <label>起点 / Start</label>
+                    <div class="input-wrapper">
+                        <input type="text" id="start-input" placeholder="输入起点位置..." required autocomplete="off">
+                        <div class="autocomplete-results" id="start-results"></div>
+                    </div>
                 </div>
+
+                <div class="form-group">
+                    <label>终点 / End</label>
+                    <div class="input-wrapper">
+                        <input type="text" id="end-input" placeholder="输入终点位置..." required autocomplete="off">
+                        <div class="autocomplete-results" id="end-results"></div>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label>交通方式 / Transport</label>
+                    <div class="transport-options">
+                        <button type="button" class="transport-btn active" data-type="driving">驾车</button>
+                        <button type="button" class="transport-btn" data-type="transit">公交</button>
+                        <button type="button" class="transport-btn" data-type="walking">步行</button>
+                        <button type="button" class="transport-btn" data-type="riding">骑行</button>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label>偏好 / Preference</label>
+                    <select id="preference">
+                        <option value="0">最快时间</option>
+                        <option value="1">最短距离</option>
+                        <option value="2">最少红绿灯</option>
+                        <option value="3">最少收费</option>
+                    </select>
+                </div>
+
+                <button type="submit" class="btn-primary" id="submit-btn">
+                    开始规划 / Plan Route
+                </button>
+            </form>
+
+            <div id="error-message" class="error-message"></div>
+
+            <div id="results-section" class="results-section">
+                <div class="result-title">规划结果 / Results</div>
+                <div id="results-content"></div>
             </div>
-
-            <div class="form-group">
-                <label>出行偏好</label>
-                <select id="preference">
-                    <option value="balance">综合最优</option>
-                    <option value="time">最短时间</option>
-                    <option value="distance">最短距离</option>
-                    <option value="cost">最低费用</option>
-                </select>
-            </div>
-
-            <button type="submit" class="btn" id="submit-btn">
-                开始规划路线
-            </button>
-        </form>
-
-        <div id="error-message" class="error-message"></div>
-
-        <div id="result-card" class="result-card">
-            <div class="result-title">
-                📍 规划结果
-            </div>
-            <div id="result-content"></div>
         </div>
 
-        <div class="footer">
-            Powered by <a href="https://github.com/yourusername/beijing-commute-optimizer" target="_blank">阿里云函数计算</a>
+        <div class="map-container">
+            <div id="map"></div>
         </div>
     </div>
 
     <script>
         const API_URL = 'https://beijing-commute-isbgwcfmkn.cn-hangzhou.fcapp.run';
+        const AMAP_KEY = '12c7f133b9e4a7fa4933479eb20ad90e';
+
+        let map;
+        let startMarker, endMarker;
+        let startLocation, endLocation;
+        let currentTransport = 'driving';
+        let autoCompleteStart, autoCompleteEnd;
+
+        // 初始化地图
+        function initMap() {
+            map = new AMap.Map('map', {
+                zoom: 11,
+                center: [116.397428, 39.90923],
+                mapStyle: 'amap://styles/whitesmoke'
+            });
+
+            // 初始化自动完成
+            autoCompleteStart = new AMap.AutoComplete({
+                city: '北京'
+            });
+
+            autoCompleteEnd = new AMap.AutoComplete({
+                city: '北京'
+            });
+        }
 
         // 检查服务状态
         async function checkStatus() {
             const statusText = document.getElementById('status-text');
+            const statusDot = document.getElementById('status-dot');
+
             try {
-                const response = await fetch(API_URL);
+                const response = await fetch(API_URL, { mode: 'cors' });
                 const data = await response.json();
+
                 if (data.status === 'ok') {
-                    statusText.textContent = '服务正常运行';
+                    statusText.textContent = '服务正常';
+                    statusDot.classList.add('online');
                 } else {
                     statusText.textContent = '服务异常';
+                    statusDot.classList.remove('online');
                 }
             } catch (error) {
-                statusText.textContent = '服务连接失败';
+                statusText.textContent = '连接失败';
+                statusDot.classList.remove('online');
                 console.error('Status check failed:', error);
             }
         }
 
-        // 显示错误消息
+        // 地点搜索联想
+        function setupAutocomplete(inputId, resultsId, autocompleteInstance) {
+            const input = document.getElementById(inputId);
+            const results = document.getElementById(resultsId);
+
+            input.addEventListener('input', function() {
+                const keyword = this.value.trim();
+
+                if (keyword.length < 2) {
+                    results.classList.remove('show');
+                    return;
+                }
+
+                autocompleteInstance.search(keyword, function(status, result) {
+                    if (status === 'complete' && result.tips) {
+                        displayResults(result.tips, results, input, inputId === 'start-input' ? 'start' : 'end');
+                    } else {
+                        results.classList.remove('show');
+                    }
+                });
+            });
+
+            document.addEventListener('click', function(e) {
+                if (!input.contains(e.target) && !results.contains(e.target)) {
+                    results.classList.remove('show');
+                }
+            });
+        }
+
+        function displayResults(tips, resultsContainer, inputElement, type) {
+            if (!tips || tips.length === 0) {
+                resultsContainer.classList.remove('show');
+                return;
+            }
+
+            resultsContainer.innerHTML = tips.slice(0, 5).map(tip => `
+                <div class="autocomplete-item" data-lng="${tip.location?.lng}" data-lat="${tip.location?.lat}" data-name="${tip.name}">
+                    ${tip.name} ${tip.district ? '- ' + tip.district : ''}
+                </div>
+            `).join('');
+
+            resultsContainer.classList.add('show');
+
+            resultsContainer.querySelectorAll('.autocomplete-item').forEach(item => {
+                item.addEventListener('click', function() {
+                    const name = this.dataset.name;
+                    const lng = parseFloat(this.dataset.lng);
+                    const lat = parseFloat(this.dataset.lat);
+
+                    inputElement.value = name;
+
+                    if (type === 'start') {
+                        startLocation = { name, lng, lat };
+                        updateMarker('start', lng, lat);
+                    } else {
+                        endLocation = { name, lng, lat };
+                        updateMarker('end', lng, lat);
+                    }
+
+                    resultsContainer.classList.remove('show');
+
+                    if (startLocation && endLocation) {
+                        map.setFitView();
+                    }
+                });
+            });
+        }
+
+        function updateMarker(type, lng, lat) {
+            const position = [lng, lat];
+
+            if (type === 'start') {
+                if (startMarker) {
+                    startMarker.setPosition(position);
+                } else {
+                    startMarker = new AMap.Marker({
+                        position: position,
+                        title: '起点',
+                        label: { content: 'A', direction: 'top' }
+                    });
+                    map.add(startMarker);
+                }
+            } else {
+                if (endMarker) {
+                    endMarker.setPosition(position);
+                } else {
+                    endMarker = new AMap.Marker({
+                        position: position,
+                        title: '终点',
+                        label: { content: 'B', direction: 'top' }
+                    });
+                    map.add(endMarker);
+                }
+            }
+
+            map.setCenter(position);
+        }
+
+        // 交通方式选择
+        document.querySelectorAll('.transport-btn').forEach(btn => {
+            btn.addEventListener('click', function() {
+                document.querySelectorAll('.transport-btn').forEach(b => b.classList.remove('active'));
+                this.classList.add('active');
+                currentTransport = this.dataset.type;
+            });
+        });
+
+        // 显示错误
         function showError(message) {
             const errorDiv = document.getElementById('error-message');
             errorDiv.textContent = message;
             errorDiv.classList.add('show');
-            setTimeout(() => {
-                errorDiv.classList.remove('show');
-            }, 5000);
+            setTimeout(() => errorDiv.classList.remove('show'), 5000);
         }
 
-        // 显示结果
-        function showResult(data) {
-            const resultCard = document.getElementById('result-card');
-            const resultContent = document.getElementById('result-content');
-
-            resultContent.innerHTML = `
-                <div class="result-item">
-                    <div class="result-label">推荐方案</div>
-                    <div class="result-value">${data.recommendation || '暂无推荐'}</div>
-                </div>
-                <div class="result-item">
-                    <div class="result-label">预计用时</div>
-                    <div class="result-value">${data.duration || '计算中...'}</div>
-                </div>
-                <div class="result-item">
-                    <div class="result-label">距离</div>
-                    <div class="result-value">${data.distance || '计算中...'}</div>
-                </div>
-                <div class="result-item">
-                    <div class="result-label">路况信息</div>
-                    <div class="result-value">${data.traffic || '良好'}</div>
-                </div>
-            `;
-
-            resultCard.classList.add('show');
-        }
-
-        // 处理表单提交
-        document.getElementById('route-form').addEventListener('submit', async (e) => {
+        // 规划路线
+        async function planRoute(e) {
             e.preventDefault();
 
+            if (!startLocation || !endLocation) {
+                showError('请先选择起点和终点');
+                return;
+            }
+
             const submitBtn = document.getElementById('submit-btn');
-            const originalText = submitBtn.textContent;
-
-            // 禁用按钮并显示加载状态
             submitBtn.disabled = true;
-            submitBtn.innerHTML = '<span class="loading"></span> 规划中...';
+            submitBtn.textContent = '规划中...';
 
-            // 隐藏之前的结果
-            document.getElementById('result-card').classList.remove('show');
+            // 清除之前的路线
+            map.clearMap();
 
-            // 收集表单数据
-            const requestData = {
-                start: {
-                    name: document.getElementById('start-name').value,
-                    lng: parseFloat(document.getElementById('start-lng').value),
-                    lat: parseFloat(document.getElementById('start-lat').value)
-                },
-                end: {
-                    name: document.getElementById('end-name').value,
-                    lng: parseFloat(document.getElementById('end-lng').value),
-                    lat: parseFloat(document.getElementById('end-lat').value)
-                },
-                preference: document.getElementById('preference').value
-            };
+            // 重新添加标记
+            if (startMarker) map.add(startMarker);
+            if (endMarker) map.add(endMarker);
+
+            const preference = document.getElementById('preference').value;
 
             try {
-                // 目前只显示演示数据,因为 planRoute 函数还未部署
-                // const response = await fetch(`${API_URL}/planRoute`, {
-                //     method: 'POST',
-                //     headers: { 'Content-Type': 'application/json' },
-                //     body: JSON.stringify(requestData)
-                // });
+                let routeService;
+                let results = [];
 
-                // if (!response.ok) {
-                //     throw new Error('请求失败');
-                // }
+                if (currentTransport === 'driving') {
+                    routeService = new AMap.Driving({
+                        policy: parseInt(preference)
+                    });
 
-                // const data = await response.json();
+                    routeService.search([startLocation.lng, startLocation.lat],
+                                       [endLocation.lng, endLocation.lat],
+                                       function(status, result) {
+                        if (status === 'complete' && result.routes) {
+                            displayRoutes(result.routes, 'driving');
+                            drawRoute(result.routes[0]);
+                        } else {
+                            showError('路线规划失败');
+                        }
+                    });
+                } else if (currentTransport === 'transit') {
+                    routeService = new AMap.Transfer({
+                        city: '北京'
+                    });
 
-                // 演示数据
-                const data = {
-                    recommendation: `${requestData.start.name} → ${requestData.end.name}`,
-                    duration: '约 35 分钟',
-                    distance: '约 12.5 公里',
-                    traffic: '当前路况良好，建议出行'
-                };
+                    routeService.search([startLocation.lng, startLocation.lat],
+                                       [endLocation.lng, endLocation.lat],
+                                       function(status, result) {
+                        if (status === 'complete' && result.plans) {
+                            displayRoutes(result.plans, 'transit');
+                            drawTransitRoute(result.plans[0]);
+                        } else {
+                            showError('路线规划失败');
+                        }
+                    });
+                } else if (currentTransport === 'walking') {
+                    routeService = new AMap.Walking();
 
-                showResult(data);
+                    routeService.search([startLocation.lng, startLocation.lat],
+                                       [endLocation.lng, endLocation.lat],
+                                       function(status, result) {
+                        if (status === 'complete' && result.routes) {
+                            displayRoutes(result.routes, 'walking');
+                            drawRoute(result.routes[0]);
+                        } else {
+                            showError('路线规划失败');
+                        }
+                    });
+                } else if (currentTransport === 'riding') {
+                    routeService = new AMap.Riding();
+
+                    routeService.search([startLocation.lng, startLocation.lat],
+                                       [endLocation.lng, endLocation.lat],
+                                       function(status, result) {
+                        if (status === 'complete' && result.routes) {
+                            displayRoutes(result.routes, 'riding');
+                            drawRoute(result.routes[0]);
+                        } else {
+                            showError('路线规划失败');
+                        }
+                    });
+                }
 
             } catch (error) {
-                console.error('Route planning failed:', error);
-                showError('路线规划失败，请稍后重试');
+                console.error('Route planning error:', error);
+                showError('路线规划失败: ' + error.message);
             } finally {
-                // 恢复按钮状态
                 submitBtn.disabled = false;
-                submitBtn.textContent = originalText;
+                submitBtn.textContent = '开始规划 / Plan Route';
             }
-        });
+        }
 
-        // 页面加载时检查状态
-        checkStatus();
+        function displayRoutes(routes, type) {
+            const resultsSection = document.getElementById('results-section');
+            const resultsContent = document.getElementById('results-content');
 
-        // 每30秒检查一次状态
-        setInterval(checkStatus, 30000);
+            let html = '';
 
-        // 填充示例数据
-        document.addEventListener('DOMContentLoaded', () => {
-            document.getElementById('start-name').value = '天安门';
-            document.getElementById('start-lng').value = '116.397428';
-            document.getElementById('start-lat').value = '39.90923';
-            document.getElementById('end-name').value = '鸟巢';
-            document.getElementById('end-lng').value = '116.481028';
-            document.getElementById('end-lat').value = '39.989643';
+            if (type === 'driving' || type === 'walking' || type === 'riding') {
+                routes.slice(0, 3).forEach((route, index) => {
+                    const distance = (route.distance / 1000).toFixed(1);
+                    const time = Math.round(route.time / 60);
+                    const cost = type === 'driving' ? (route.tolls || 0) : 0;
+
+                    html += `
+                        <div class="route-item">
+                            <div class="route-header">
+                                <span class="route-type">方案 ${index + 1}</span>
+                                <span class="route-cost">¥ ${cost}</span>
+                            </div>
+                            <div class="route-details">
+                                <div class="route-detail">
+                                    <div class="detail-label">时间</div>
+                                    <div class="detail-value">${time}分钟</div>
+                                </div>
+                                <div class="route-detail">
+                                    <div class="detail-label">距离</div>
+                                    <div class="detail-value">${distance}公里</div>
+                                </div>
+                                <div class="route-detail">
+                                    <div class="detail-label">费用</div>
+                                    <div class="detail-value">¥${cost}</div>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                });
+            } else if (type === 'transit') {
+                routes.slice(0, 3).forEach((plan, index) => {
+                    const distance = (plan.distance / 1000).toFixed(1);
+                    const time = Math.round(plan.time / 60);
+                    const cost = plan.cost || 0;
+
+                    html += `
+                        <div class="route-item">
+                            <div class="route-header">
+                                <span class="route-type">方案 ${index + 1}</span>
+                                <span class="route-cost">¥ ${cost}</span>
+                            </div>
+                            <div class="route-details">
+                                <div class="route-detail">
+                                    <div class="detail-label">时间</div>
+                                    <div class="detail-value">${time}分钟</div>
+                                </div>
+                                <div class="route-detail">
+                                    <div class="detail-label">距离</div>
+                                    <div class="detail-value">${distance}公里</div>
+                                </div>
+                                <div class="route-detail">
+                                    <div class="detail-label">费用</div>
+                                    <div class="detail-value">¥${cost}</div>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                });
+            }
+
+            resultsContent.innerHTML = html;
+            resultsSection.classList.add('show');
+        }
+
+        function drawRoute(route) {
+            const path = [];
+            route.steps.forEach(step => {
+                step.path.forEach(point => {
+                    path.push([point.lng, point.lat]);
+                });
+            });
+
+            const polyline = new AMap.Polyline({
+                path: path,
+                strokeColor: '#000000',
+                strokeWeight: 5,
+                strokeOpacity: 0.8
+            });
+
+            map.add(polyline);
+            map.setFitView([polyline]);
+        }
+
+        function drawTransitRoute(plan) {
+            plan.segments.forEach(segment => {
+                if (segment.transit_mode === 'WALK') {
+                    const path = segment.path.map(p => [p.lng, p.lat]);
+                    const polyline = new AMap.Polyline({
+                        path: path,
+                        strokeColor: '#666666',
+                        strokeWeight: 3,
+                        strokeStyle: 'dashed'
+                    });
+                    map.add(polyline);
+                } else {
+                    const path = segment.path.map(p => [p.lng, p.lat]);
+                    const polyline = new AMap.Polyline({
+                        path: path,
+                        strokeColor: '#000000',
+                        strokeWeight: 5
+                    });
+                    map.add(polyline);
+                }
+            });
+        }
+
+        // 初始化
+        document.addEventListener('DOMContentLoaded', function() {
+            initMap();
+            checkStatus();
+            setInterval(checkStatus, 30000);
+
+            setupAutocomplete('start-input', 'start-results', autoCompleteStart);
+            setupAutocomplete('end-input', 'end-results', autoCompleteEnd);
+
+            document.getElementById('route-form').addEventListener('submit', planRoute);
         });
     </script>
 </body>
