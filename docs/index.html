@@ -1,0 +1,449 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>北京智能出行决策助手</title>
+    <meta name="description" content="基于实时路况的北京出行路线规划工具">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        .container {
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            max-width: 600px;
+            width: 100%;
+            padding: 40px;
+        }
+
+        h1 {
+            color: #333;
+            font-size: 28px;
+            margin-bottom: 10px;
+            text-align: center;
+        }
+
+        .subtitle {
+            color: #666;
+            text-align: center;
+            margin-bottom: 30px;
+            font-size: 14px;
+        }
+
+        .status-card {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 20px;
+            border-radius: 12px;
+            margin-bottom: 30px;
+            text-align: center;
+        }
+
+        .status-card h2 {
+            font-size: 18px;
+            margin-bottom: 10px;
+        }
+
+        .status-indicator {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            background: rgba(255, 255, 255, 0.2);
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-size: 14px;
+        }
+
+        .status-dot {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            background: #4ade80;
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        label {
+            display: block;
+            color: #333;
+            font-weight: 500;
+            margin-bottom: 8px;
+            font-size: 14px;
+        }
+
+        input, select {
+            width: 100%;
+            padding: 12px 16px;
+            border: 2px solid #e5e7eb;
+            border-radius: 10px;
+            font-size: 14px;
+            transition: all 0.3s;
+            font-family: inherit;
+        }
+
+        input:focus, select:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+
+        .location-group {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+        }
+
+        .btn {
+            width: 100%;
+            padding: 14px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            border-radius: 10px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.2s;
+            margin-top: 10px;
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(102, 126, 234, 0.3);
+        }
+
+        .btn:active {
+            transform: translateY(0);
+        }
+
+        .btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .result-card {
+            background: #f9fafb;
+            border-radius: 12px;
+            padding: 20px;
+            margin-top: 20px;
+            display: none;
+        }
+
+        .result-card.show {
+            display: block;
+            animation: slideIn 0.3s ease-out;
+        }
+
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .result-title {
+            color: #333;
+            font-size: 18px;
+            font-weight: 600;
+            margin-bottom: 15px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .result-item {
+            background: white;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 10px;
+            border-left: 4px solid #667eea;
+        }
+
+        .result-item:last-child {
+            margin-bottom: 0;
+        }
+
+        .result-label {
+            color: #666;
+            font-size: 12px;
+            margin-bottom: 4px;
+        }
+
+        .result-value {
+            color: #333;
+            font-size: 16px;
+            font-weight: 500;
+        }
+
+        .loading {
+            display: inline-block;
+            width: 16px;
+            height: 16px;
+            border: 3px solid rgba(255, 255, 255, 0.3);
+            border-radius: 50%;
+            border-top-color: white;
+            animation: spin 0.8s linear infinite;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        .error-message {
+            background: #fee2e2;
+            color: #991b1b;
+            padding: 12px 16px;
+            border-radius: 8px;
+            margin-top: 15px;
+            font-size: 14px;
+            display: none;
+        }
+
+        .error-message.show {
+            display: block;
+        }
+
+        .footer {
+            text-align: center;
+            margin-top: 30px;
+            color: #999;
+            font-size: 12px;
+        }
+
+        .footer a {
+            color: #667eea;
+            text-decoration: none;
+        }
+
+        .footer a:hover {
+            text-decoration: underline;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🚗 北京智能出行决策助手</h1>
+        <p class="subtitle">基于实时路况的智能路线规划</p>
+
+        <div class="status-card">
+            <h2>系统状态</h2>
+            <div class="status-indicator">
+                <span class="status-dot"></span>
+                <span id="status-text">正在检查...</span>
+            </div>
+        </div>
+
+        <form id="route-form">
+            <div class="form-group">
+                <label>起点位置</label>
+                <input type="text" id="start-name" placeholder="例如：天安门" required>
+                <div class="location-group">
+                    <input type="number" id="start-lng" placeholder="经度" step="0.000001" required>
+                    <input type="number" id="start-lat" placeholder="纬度" step="0.000001" required>
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label>终点位置</label>
+                <input type="text" id="end-name" placeholder="例如：鸟巢" required>
+                <div class="location-group">
+                    <input type="number" id="end-lng" placeholder="经度" step="0.000001" required>
+                    <input type="number" id="end-lat" placeholder="纬度" step="0.000001" required>
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label>出行偏好</label>
+                <select id="preference">
+                    <option value="balance">综合最优</option>
+                    <option value="time">最短时间</option>
+                    <option value="distance">最短距离</option>
+                    <option value="cost">最低费用</option>
+                </select>
+            </div>
+
+            <button type="submit" class="btn" id="submit-btn">
+                开始规划路线
+            </button>
+        </form>
+
+        <div id="error-message" class="error-message"></div>
+
+        <div id="result-card" class="result-card">
+            <div class="result-title">
+                📍 规划结果
+            </div>
+            <div id="result-content"></div>
+        </div>
+
+        <div class="footer">
+            Powered by <a href="https://github.com/yourusername/beijing-commute-optimizer" target="_blank">阿里云函数计算</a>
+        </div>
+    </div>
+
+    <script>
+        const API_URL = 'https://beijing-commute-isbgwcfmkn.cn-hangzhou.fcapp.run';
+
+        // 检查服务状态
+        async function checkStatus() {
+            const statusText = document.getElementById('status-text');
+            try {
+                const response = await fetch(API_URL);
+                const data = await response.json();
+                if (data.status === 'ok') {
+                    statusText.textContent = '服务正常运行';
+                } else {
+                    statusText.textContent = '服务异常';
+                }
+            } catch (error) {
+                statusText.textContent = '服务连接失败';
+                console.error('Status check failed:', error);
+            }
+        }
+
+        // 显示错误消息
+        function showError(message) {
+            const errorDiv = document.getElementById('error-message');
+            errorDiv.textContent = message;
+            errorDiv.classList.add('show');
+            setTimeout(() => {
+                errorDiv.classList.remove('show');
+            }, 5000);
+        }
+
+        // 显示结果
+        function showResult(data) {
+            const resultCard = document.getElementById('result-card');
+            const resultContent = document.getElementById('result-content');
+
+            resultContent.innerHTML = `
+                <div class="result-item">
+                    <div class="result-label">推荐方案</div>
+                    <div class="result-value">${data.recommendation || '暂无推荐'}</div>
+                </div>
+                <div class="result-item">
+                    <div class="result-label">预计用时</div>
+                    <div class="result-value">${data.duration || '计算中...'}</div>
+                </div>
+                <div class="result-item">
+                    <div class="result-label">距离</div>
+                    <div class="result-value">${data.distance || '计算中...'}</div>
+                </div>
+                <div class="result-item">
+                    <div class="result-label">路况信息</div>
+                    <div class="result-value">${data.traffic || '良好'}</div>
+                </div>
+            `;
+
+            resultCard.classList.add('show');
+        }
+
+        // 处理表单提交
+        document.getElementById('route-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+
+            const submitBtn = document.getElementById('submit-btn');
+            const originalText = submitBtn.textContent;
+
+            // 禁用按钮并显示加载状态
+            submitBtn.disabled = true;
+            submitBtn.innerHTML = '<span class="loading"></span> 规划中...';
+
+            // 隐藏之前的结果
+            document.getElementById('result-card').classList.remove('show');
+
+            // 收集表单数据
+            const requestData = {
+                start: {
+                    name: document.getElementById('start-name').value,
+                    lng: parseFloat(document.getElementById('start-lng').value),
+                    lat: parseFloat(document.getElementById('start-lat').value)
+                },
+                end: {
+                    name: document.getElementById('end-name').value,
+                    lng: parseFloat(document.getElementById('end-lng').value),
+                    lat: parseFloat(document.getElementById('end-lat').value)
+                },
+                preference: document.getElementById('preference').value
+            };
+
+            try {
+                // 目前只显示演示数据,因为 planRoute 函数还未部署
+                // const response = await fetch(`${API_URL}/planRoute`, {
+                //     method: 'POST',
+                //     headers: { 'Content-Type': 'application/json' },
+                //     body: JSON.stringify(requestData)
+                // });
+
+                // if (!response.ok) {
+                //     throw new Error('请求失败');
+                // }
+
+                // const data = await response.json();
+
+                // 演示数据
+                const data = {
+                    recommendation: `${requestData.start.name} → ${requestData.end.name}`,
+                    duration: '约 35 分钟',
+                    distance: '约 12.5 公里',
+                    traffic: '当前路况良好，建议出行'
+                };
+
+                showResult(data);
+
+            } catch (error) {
+                console.error('Route planning failed:', error);
+                showError('路线规划失败，请稍后重试');
+            } finally {
+                // 恢复按钮状态
+                submitBtn.disabled = false;
+                submitBtn.textContent = originalText;
+            }
+        });
+
+        // 页面加载时检查状态
+        checkStatus();
+
+        // 每30秒检查一次状态
+        setInterval(checkStatus, 30000);
+
+        // 填充示例数据
+        document.addEventListener('DOMContentLoaded', () => {
+            document.getElementById('start-name').value = '天安门';
+            document.getElementById('start-lng').value = '116.397428';
+            document.getElementById('start-lat').value = '39.90923';
+            document.getElementById('end-name').value = '鸟巢';
+            document.getElementById('end-lng').value = '116.481028';
+            document.getElementById('end-lat').value = '39.989643';
+        });
+    </script>
+</body>
+</html>

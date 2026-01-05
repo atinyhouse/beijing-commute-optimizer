@@ -1,0 +1,27 @@
+edition: 3.0.0
+name: beijing-commute-optimizer
+access: default
+
+resources:
+  commute-service:
+    component: fc3
+    props:
+      region: cn-hangzhou
+      functionName: beijing-commute
+      description: 北京智能出行决策助手
+      runtime: nodejs20
+      code: ./
+      handler: index.health
+      memorySize: 512
+      timeout: 60
+      environmentVariables:
+        AMAP_KEY: '12c7f133b9e4a7fa4933479eb20ad90e'
+        NODE_ENV: 'production'
+        CACHE_TTL: '300'
+      url:
+        enable: true
+        authType: anonymous
+        cors:
+          allowOrigin: '*'
+          allowMethods: 'GET,POST,PUT,DELETE,OPTIONS'
+          allowHeaders: 'Content-Type,Authorization'
