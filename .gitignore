@@ -30,3 +30,4 @@ coverage/
 # Production
 dist/
 build/
+.vercel
