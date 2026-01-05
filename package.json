@@ -1,0 +1,29 @@
+{
+  "name": "beijing-commute-optimizer",
+  "version": "1.0.0",
+  "description": "北京智能出行决策助手 - Phase 2 实现",
+  "main": "src/index.js",
+  "type": "module",
+  "scripts": {
+    "start": "node src/index.js",
+    "dev": "nodemon src/index.js",
+    "test": "node src/test.js"
+  },
+  "keywords": [
+    "commute",
+    "beijing",
+    "route-planning",
+    "optimization"
+  ],
+  "author": "",
+  "license": "MIT",
+  "dependencies": {
+    "express": "^4.18.2",
+    "axios": "^1.6.0",
+    "dotenv": "^16.3.1",
+    "node-cache": "^5.1.2"
+  },
+  "devDependencies": {
+    "nodemon": "^3.0.2"
+  }
+}
