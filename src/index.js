@@ -75,12 +75,16 @@ app.get('/health', (req, res) => {
   });
 });
 
-app.listen(PORT, () => {
-  console.log(`\n🚀 北京出行优化服务已启动!`);
-  console.log(`📍 服务地址: http://localhost:${PORT}`);
-  console.log(`📖 API文档:`);
-  console.log(`   POST /api/routes/plan - 规划路线`);
-  console.log(`   GET  /health          - 健康检查\n`);
-});
+// 本地开发时启动服务器
+if (process.env.NODE_ENV !== 'production') {
+  app.listen(PORT, () => {
+    console.log(`\n🚀 北京出行优化服务已启动!`);
+    console.log(`📍 服务地址: http://localhost:${PORT}`);
+    console.log(`📖 API文档:`);
+    console.log(`   POST /api/routes/plan - 规划路线`);
+    console.log(`   GET  /health          - 健康检查\n`);
+  });
+}
 
+// Vercel Serverless Functions 需要导出app
 export default app;
