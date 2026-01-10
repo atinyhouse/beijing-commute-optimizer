@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>北京智能出行决策助手</title>
     <meta name="description" content="基于实时路况的北京出行路线规划工具">
-    <script src="https://webapi.amap.com/maps?v=2.0&key=12c7f133b9e4a7fa4933479eb20ad90e&plugin=AMap.AutoComplete,AMap.PlaceSearch,AMap.Driving,AMap.Transfer,AMap.Walking,AMap.Riding"></script>
+    <script src="https://webapi.amap.com/maps?v=2.0&key=12c7f133b9e4a7fa4933479eb20ad90e&plugin=AMap.AutoComplete,AMap.PlaceSearch,AMap.Driving,AMap.Transfer"></script>
     <style>
         * {
             margin: 0;
@@ -80,7 +80,7 @@
         .status-dot {
             width: 8px;
             height: 8px;
-            background: #000000;
+            background: #cccccc;
             border-radius: 0;
         }
 
@@ -150,6 +150,7 @@
             cursor: pointer;
             font-size: 13px;
             border-bottom: 1px solid #eeeeee;
+            color: #000000;
         }
 
         .autocomplete-item:hover {
@@ -159,38 +160,6 @@
 
         .autocomplete-item:last-child {
             border-bottom: none;
-        }
-
-        .transport-options {
-            display: grid;
-            grid-template-columns: repeat(2, 1fr);
-            gap: 10px;
-            margin-bottom: 20px;
-        }
-
-        .transport-btn {
-            padding: 12px;
-            background: #ffffff;
-            color: #000000;
-            border: 2px solid #ffffff;
-            font-size: 13px;
-            font-weight: 700;
-            cursor: pointer;
-            transition: all 0.2s;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-        }
-
-        .transport-btn:hover {
-            background: #000000;
-            color: #ffffff;
-            border-color: #000000;
-        }
-
-        .transport-btn.active {
-            background: #000000;
-            color: #ffffff;
-            border-color: #000000;
         }
 
         .btn-primary {
@@ -240,16 +209,45 @@
             text-transform: uppercase;
         }
 
-        .route-item {
-            padding: 15px;
+        .recommendation {
             background: #000000;
             color: #ffffff;
-            margin-bottom: 10px;
+            padding: 20px;
+            margin-bottom: 20px;
             border: 2px solid #000000;
         }
 
-        .route-item:last-child {
-            margin-bottom: 0;
+        .recommendation-title {
+            font-size: 16px;
+            font-weight: 700;
+            margin-bottom: 15px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .recommendation-reason {
+            font-size: 13px;
+            line-height: 1.8;
+            opacity: 0.9;
+            margin-bottom: 15px;
+        }
+
+        .route-comparison {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+        }
+
+        .route-item {
+            padding: 15px;
+            background: #ffffff;
+            color: #000000;
+            border: 2px solid #ffffff;
+        }
+
+        .route-item.recommended {
+            border-color: #000000;
+            border-width: 3px;
         }
 
         .route-header {
@@ -258,7 +256,7 @@
             align-items: center;
             margin-bottom: 10px;
             padding-bottom: 10px;
-            border-bottom: 1px solid #ffffff;
+            border-bottom: 1px solid #cccccc;
         }
 
         .route-type {
@@ -275,13 +273,13 @@
 
         .route-details {
             display: grid;
-            grid-template-columns: repeat(3, 1fr);
+            grid-template-columns: repeat(2, 1fr);
             gap: 10px;
             font-size: 12px;
         }
 
         .route-detail {
-            text-align: center;
+            text-align: left;
         }
 
         .detail-label {
@@ -321,6 +319,21 @@
             display: block;
         }
 
+        .badge {
+            display: inline-block;
+            padding: 4px 8px;
+            font-size: 10px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-left: 8px;
+        }
+
+        .badge.recommended {
+            background: #000000;
+            color: #ffffff;
+        }
+
         @media (max-width: 768px) {
             .container {
                 grid-template-columns: 1fr;
@@ -330,6 +343,10 @@
             .sidebar {
                 height: auto;
                 max-height: 50vh;
+            }
+
+            .route-comparison {
+                grid-template-columns: 1fr;
             }
         }
     </style>
@@ -367,35 +384,15 @@
                     </div>
                 </div>
 
-                <div class="form-group">
-                    <label>交通方式 / Transport</label>
-                    <div class="transport-options">
-                        <button type="button" class="transport-btn active" data-type="driving">驾车</button>
-                        <button type="button" class="transport-btn" data-type="transit">公交</button>
-                        <button type="button" class="transport-btn" data-type="walking">步行</button>
-                        <button type="button" class="transport-btn" data-type="riding">骑行</button>
-                    </div>
-                </div>
-
-                <div class="form-group">
-                    <label>偏好 / Preference</label>
-                    <select id="preference">
-                        <option value="0">最快时间</option>
-                        <option value="1">最短距离</option>
-                        <option value="2">最少红绿灯</option>
-                        <option value="3">最少收费</option>
-                    </select>
-                </div>
-
                 <button type="submit" class="btn-primary" id="submit-btn">
-                    开始规划 / Plan Route
+                    智能决策 / Smart Decision
                 </button>
             </form>
 
             <div id="error-message" class="error-message"></div>
 
             <div id="results-section" class="results-section">
-                <div class="result-title">规划结果 / Results</div>
+                <div class="result-title">决策结果 / Decision</div>
                 <div id="results-content"></div>
             </div>
         </div>
@@ -412,8 +409,8 @@
         let map;
         let startMarker, endMarker;
         let startLocation, endLocation;
-        let currentTransport = 'driving';
         let autoCompleteStart, autoCompleteEnd;
+        let drivingService, transitService;
 
         // 初始化地图
         function initMap() {
@@ -431,6 +428,17 @@
             autoCompleteEnd = new AMap.AutoComplete({
                 city: '北京'
             });
+
+            // 初始化路线服务
+            drivingService = new AMap.Driving({
+                policy: 0 // 综合最优
+            });
+
+            transitService = new AMap.Transfer({
+                city: '北京'
+            });
+
+            console.log('Map initialized successfully');
         }
 
         // 检查服务状态
@@ -439,12 +447,13 @@
             const statusDot = document.getElementById('status-dot');
 
             try {
-                const response = await fetch(API_URL, { mode: 'cors' });
+                const response = await fetch(API_URL);
                 const data = await response.json();
 
                 if (data.status === 'ok') {
                     statusText.textContent = '服务正常';
                     statusDot.classList.add('online');
+                    console.log('API status OK');
                 } else {
                     statusText.textContent = '服务异常';
                     statusDot.classList.remove('online');
@@ -470,6 +479,7 @@
                 }
 
                 autocompleteInstance.search(keyword, function(status, result) {
+                    console.log('Autocomplete status:', status, 'result:', result);
                     if (status === 'complete' && result.tips) {
                         displayResults(result.tips, results, input, inputId === 'start-input' ? 'start' : 'end');
                     } else {
@@ -491,11 +501,14 @@
                 return;
             }
 
-            resultsContainer.innerHTML = tips.slice(0, 5).map(tip => `
-                <div class="autocomplete-item" data-lng="${tip.location?.lng}" data-lat="${tip.location?.lat}" data-name="${tip.name}">
-                    ${tip.name} ${tip.district ? '- ' + tip.district : ''}
-                </div>
-            `).join('');
+            resultsContainer.innerHTML = tips.slice(0, 5).map(tip => {
+                if (!tip.location) return '';
+                return `
+                    <div class="autocomplete-item" data-lng="${tip.location.lng}" data-lat="${tip.location.lat}" data-name="${tip.name}">
+                        ${tip.name} ${tip.district ? '- ' + tip.district : ''}
+                    </div>
+                `;
+            }).filter(item => item !== '').join('');
 
             resultsContainer.classList.add('show');
 
@@ -518,7 +531,7 @@
                     resultsContainer.classList.remove('show');
 
                     if (startLocation && endLocation) {
-                        map.setFitView();
+                        map.setFitView([startMarker, endMarker]);
                     }
                 });
             });
@@ -554,15 +567,6 @@
             map.setCenter(position);
         }
 
-        // 交通方式选择
-        document.querySelectorAll('.transport-btn').forEach(btn => {
-            btn.addEventListener('click', function() {
-                document.querySelectorAll('.transport-btn').forEach(b => b.classList.remove('active'));
-                this.classList.add('active');
-                currentTransport = this.dataset.type;
-            });
-        });
-
         // 显示错误
         function showError(message) {
             const errorDiv = document.getElementById('error-message');
@@ -571,7 +575,94 @@
             setTimeout(() => errorDiv.classList.remove('show'), 5000);
         }
 
-        // 规划路线
+        // 智能决策算法
+        function makeSmartDecision(drivingData, transitData) {
+            const drivingTime = drivingData.time / 60; // 转换为分钟
+            const drivingCost = drivingData.cost;
+            const drivingDistance = drivingData.distance / 1000; // 转换为公里
+
+            const transitTime = transitData.time / 60;
+            const transitCost = transitData.cost;
+            const transitDistance = transitData.distance / 1000;
+
+            // 决策权重配置
+            const weights = {
+                time: 0.4,      // 时间权重40%
+                cost: 0.35,     // 费用权重35%
+                comfort: 0.25   // 舒适度权重25%
+            };
+
+            // 计算各项得分（0-100）
+            // 时间得分：越短越好
+            const timeScore = {
+                driving: Math.max(0, 100 - drivingTime * 2),
+                transit: Math.max(0, 100 - transitTime * 2)
+            };
+
+            // 费用得分：越低越好
+            const costScore = {
+                driving: Math.max(0, 100 - drivingCost / 2),
+                transit: Math.max(0, 100 - transitCost * 5)
+            };
+
+            // 舒适度得分
+            const comfortScore = {
+                driving: 80, // 打车舒适度固定80分
+                transit: 60  // 地铁舒适度固定60分（考虑拥挤、换乘等）
+            };
+
+            // 综合得分
+            const drivingScore =
+                timeScore.driving * weights.time +
+                costScore.driving * weights.cost +
+                comfortScore.driving * weights.comfort;
+
+            const transitScore =
+                timeScore.transit * weights.time +
+                costScore.transit * weights.cost +
+                comfortScore.transit * weights.comfort;
+
+            // 生成推荐理由
+            let reason = '';
+            let recommended = '';
+
+            if (drivingScore > transitScore) {
+                recommended = 'driving';
+                const timeDiff = Math.round(transitTime - drivingTime);
+                const costDiff = Math.round(drivingCost - transitCost);
+
+                if (timeDiff > 20) {
+                    reason = `推荐打车。虽然费用多 ¥${costDiff}，但可节省 ${timeDiff} 分钟，性价比更高。`;
+                } else if (costDiff < 30) {
+                    reason = `推荐打车。费用仅多 ¥${costDiff}，但更加舒适便捷，无需换乘。`;
+                } else {
+                    reason = `推荐打车。综合时间、费用和舒适度，打车是更优选择。`;
+                }
+            } else {
+                recommended = 'transit';
+                const timeDiff = Math.round(drivingTime - transitTime);
+                const costDiff = Math.round(drivingCost - transitCost);
+
+                if (costDiff > 50) {
+                    reason = `推荐地铁。可节省 ¥${costDiff}，经济实惠。${timeDiff > 0 ? `时间仅多 ${timeDiff} 分钟。` : ''}`;
+                } else if (transitTime < drivingTime) {
+                    reason = `推荐地铁。节省 ${timeDiff} 分钟，且费用更低，是最优选择。`;
+                } else {
+                    reason = `推荐地铁。虽然时间略长，但费用低廉，适合日常通勤。`;
+                }
+            }
+
+            return {
+                recommended,
+                reason,
+                scores: {
+                    driving: Math.round(drivingScore),
+                    transit: Math.round(transitScore)
+                }
+            };
+        }
+
+        // 规划路线并进行智能决策
         async function planRoute(e) {
             e.preventDefault();
 
@@ -582,7 +673,7 @@
 
             const submitBtn = document.getElementById('submit-btn');
             submitBtn.disabled = true;
-            submitBtn.textContent = '规划中...';
+            submitBtn.textContent = '分析中...';
 
             // 清除之前的路线
             map.clearMap();
@@ -591,68 +682,27 @@
             if (startMarker) map.add(startMarker);
             if (endMarker) map.add(endMarker);
 
-            const preference = document.getElementById('preference').value;
-
             try {
-                let routeService;
-                let results = [];
+                // 并行获取打车和地铁方案
+                const [drivingResult, transitResult] = await Promise.all([
+                    getDrivingRoute(),
+                    getTransitRoute()
+                ]);
 
-                if (currentTransport === 'driving') {
-                    routeService = new AMap.Driving({
-                        policy: parseInt(preference)
-                    });
+                console.log('Driving result:', drivingResult);
+                console.log('Transit result:', transitResult);
 
-                    routeService.search([startLocation.lng, startLocation.lat],
-                                       [endLocation.lng, endLocation.lat],
-                                       function(status, result) {
-                        if (status === 'complete' && result.routes) {
-                            displayRoutes(result.routes, 'driving');
-                            drawRoute(result.routes[0]);
-                        } else {
-                            showError('路线规划失败');
-                        }
-                    });
-                } else if (currentTransport === 'transit') {
-                    routeService = new AMap.Transfer({
-                        city: '北京'
-                    });
+                // 进行智能决策
+                const decision = makeSmartDecision(drivingResult, transitResult);
 
-                    routeService.search([startLocation.lng, startLocation.lat],
-                                       [endLocation.lng, endLocation.lat],
-                                       function(status, result) {
-                        if (status === 'complete' && result.plans) {
-                            displayRoutes(result.plans, 'transit');
-                            drawTransitRoute(result.plans[0]);
-                        } else {
-                            showError('路线规划失败');
-                        }
-                    });
-                } else if (currentTransport === 'walking') {
-                    routeService = new AMap.Walking();
+                // 显示结果
+                displayDecision(decision, drivingResult, transitResult);
 
-                    routeService.search([startLocation.lng, startLocation.lat],
-                                       [endLocation.lng, endLocation.lat],
-                                       function(status, result) {
-                        if (status === 'complete' && result.routes) {
-                            displayRoutes(result.routes, 'walking');
-                            drawRoute(result.routes[0]);
-                        } else {
-                            showError('路线规划失败');
-                        }
-                    });
-                } else if (currentTransport === 'riding') {
-                    routeService = new AMap.Riding();
-
-                    routeService.search([startLocation.lng, startLocation.lat],
-                                       [endLocation.lng, endLocation.lat],
-                                       function(status, result) {
-                        if (status === 'complete' && result.routes) {
-                            displayRoutes(result.routes, 'riding');
-                            drawRoute(result.routes[0]);
-                        } else {
-                            showError('路线规划失败');
-                        }
-                    });
+                // 绘制推荐路线
+                if (decision.recommended === 'driving') {
+                    drawDrivingRoute(drivingResult.route);
+                } else {
+                    drawTransitRoute(transitResult.plan);
                 }
 
             } catch (error) {
@@ -660,81 +710,124 @@
                 showError('路线规划失败: ' + error.message);
             } finally {
                 submitBtn.disabled = false;
-                submitBtn.textContent = '开始规划 / Plan Route';
+                submitBtn.textContent = '智能决策 / Smart Decision';
             }
         }
 
-        function displayRoutes(routes, type) {
+        function getDrivingRoute() {
+            return new Promise((resolve, reject) => {
+                drivingService.search(
+                    [startLocation.lng, startLocation.lat],
+                    [endLocation.lng, endLocation.lat],
+                    function(status, result) {
+                        if (status === 'complete' && result.routes && result.routes.length > 0) {
+                            const route = result.routes[0];
+                            resolve({
+                                time: route.time,
+                                distance: route.distance,
+                                cost: route.tolls || Math.round(route.distance / 1000 * 3.5), // 按3.5元/公里估算
+                                route: route
+                            });
+                        } else {
+                            reject(new Error('打车路线规划失败'));
+                        }
+                    }
+                );
+            });
+        }
+
+        function getTransitRoute() {
+            return new Promise((resolve, reject) => {
+                transitService.search(
+                    [startLocation.lng, startLocation.lat],
+                    [endLocation.lng, endLocation.lat],
+                    function(status, result) {
+                        if (status === 'complete' && result.plans && result.plans.length > 0) {
+                            const plan = result.plans[0];
+                            resolve({
+                                time: plan.time,
+                                distance: plan.distance,
+                                cost: plan.cost || 3, // 默认3元
+                                plan: plan
+                            });
+                        } else {
+                            reject(new Error('地铁路线规划失败'));
+                        }
+                    }
+                );
+            });
+        }
+
+        function displayDecision(decision, drivingData, transitData) {
             const resultsSection = document.getElementById('results-section');
             const resultsContent = document.getElementById('results-content');
 
-            let html = '';
+            const drivingTime = Math.round(drivingData.time / 60);
+            const drivingDistance = (drivingData.distance / 1000).toFixed(1);
+            const drivingCost = drivingData.cost;
 
-            if (type === 'driving' || type === 'walking' || type === 'riding') {
-                routes.slice(0, 3).forEach((route, index) => {
-                    const distance = (route.distance / 1000).toFixed(1);
-                    const time = Math.round(route.time / 60);
-                    const cost = type === 'driving' ? (route.tolls || 0) : 0;
+            const transitTime = Math.round(transitData.time / 60);
+            const transitDistance = (transitData.distance / 1000).toFixed(1);
+            const transitCost = transitData.cost;
 
-                    html += `
-                        <div class="route-item">
-                            <div class="route-header">
-                                <span class="route-type">方案 ${index + 1}</span>
-                                <span class="route-cost">¥ ${cost}</span>
+            const html = `
+                <div class="recommendation">
+                    <div class="recommendation-title">
+                        ${decision.recommended === 'driving' ? '🚗 推荐打车' : '🚇 推荐地铁'}
+                    </div>
+                    <div class="recommendation-reason">
+                        ${decision.reason}
+                    </div>
+                </div>
+
+                <div class="route-comparison">
+                    <div class="route-item ${decision.recommended === 'driving' ? 'recommended' : ''}">
+                        <div class="route-header">
+                            <span class="route-type">
+                                打车 / Taxi
+                                ${decision.recommended === 'driving' ? '<span class="badge recommended">推荐</span>' : ''}
+                            </span>
+                            <span class="route-cost">¥ ${drivingCost}</span>
+                        </div>
+                        <div class="route-details">
+                            <div class="route-detail">
+                                <div class="detail-label">时间</div>
+                                <div class="detail-value">${drivingTime}分钟</div>
                             </div>
-                            <div class="route-details">
-                                <div class="route-detail">
-                                    <div class="detail-label">时间</div>
-                                    <div class="detail-value">${time}分钟</div>
-                                </div>
-                                <div class="route-detail">
-                                    <div class="detail-label">距离</div>
-                                    <div class="detail-value">${distance}公里</div>
-                                </div>
-                                <div class="route-detail">
-                                    <div class="detail-label">费用</div>
-                                    <div class="detail-value">¥${cost}</div>
-                                </div>
+                            <div class="route-detail">
+                                <div class="detail-label">距离</div>
+                                <div class="detail-value">${drivingDistance}公里</div>
                             </div>
                         </div>
-                    `;
-                });
-            } else if (type === 'transit') {
-                routes.slice(0, 3).forEach((plan, index) => {
-                    const distance = (plan.distance / 1000).toFixed(1);
-                    const time = Math.round(plan.time / 60);
-                    const cost = plan.cost || 0;
+                    </div>
 
-                    html += `
-                        <div class="route-item">
-                            <div class="route-header">
-                                <span class="route-type">方案 ${index + 1}</span>
-                                <span class="route-cost">¥ ${cost}</span>
+                    <div class="route-item ${decision.recommended === 'transit' ? 'recommended' : ''}">
+                        <div class="route-header">
+                            <span class="route-type">
+                                地铁 / Metro
+                                ${decision.recommended === 'transit' ? '<span class="badge recommended">推荐</span>' : ''}
+                            </span>
+                            <span class="route-cost">¥ ${transitCost}</span>
+                        </div>
+                        <div class="route-details">
+                            <div class="route-detail">
+                                <div class="detail-label">时间</div>
+                                <div class="detail-value">${transitTime}分钟</div>
                             </div>
-                            <div class="route-details">
-                                <div class="route-detail">
-                                    <div class="detail-label">时间</div>
-                                    <div class="detail-value">${time}分钟</div>
-                                </div>
-                                <div class="route-detail">
-                                    <div class="detail-label">距离</div>
-                                    <div class="detail-value">${distance}公里</div>
-                                </div>
-                                <div class="route-detail">
-                                    <div class="detail-label">费用</div>
-                                    <div class="detail-value">¥${cost}</div>
-                                </div>
+                            <div class="route-detail">
+                                <div class="detail-label">距离</div>
+                                <div class="detail-value">${transitDistance}公里</div>
                             </div>
                         </div>
-                    `;
-                });
-            }
+                    </div>
+                </div>
+            `;
 
             resultsContent.innerHTML = html;
             resultsSection.classList.add('show');
         }
 
-        function drawRoute(route) {
+        function drawDrivingRoute(route) {
             const path = [];
             route.steps.forEach(step => {
                 step.path.forEach(point => {
@@ -750,10 +843,12 @@
             });
 
             map.add(polyline);
-            map.setFitView([polyline]);
+            map.setFitView([polyline, startMarker, endMarker]);
         }
 
         function drawTransitRoute(plan) {
+            const allPaths = [];
+
             plan.segments.forEach(segment => {
                 if (segment.transit_mode === 'WALK') {
                     const path = segment.path.map(p => [p.lng, p.lat]);
@@ -764,6 +859,7 @@
                         strokeStyle: 'dashed'
                     });
                     map.add(polyline);
+                    allPaths.push(polyline);
                 } else {
                     const path = segment.path.map(p => [p.lng, p.lat]);
                     const polyline = new AMap.Polyline({
@@ -772,12 +868,16 @@
                         strokeWeight: 5
                     });
                     map.add(polyline);
+                    allPaths.push(polyline);
                 }
             });
+
+            map.setFitView([...allPaths, startMarker, endMarker]);
         }
 
         // 初始化
         document.addEventListener('DOMContentLoaded', function() {
+            console.log('DOM loaded, initializing...');
             initMap();
             checkStatus();
             setInterval(checkStatus, 30000);
