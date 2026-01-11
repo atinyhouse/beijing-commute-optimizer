@@ -439,10 +439,6 @@
             });
 
             console.log('Map initialized successfully');
-
-            // 地图初始化完成后,设置自动完成
-            setupAutocomplete('start-input', 'start-results', autoCompleteStart);
-            setupAutocomplete('end-input', 'end-results', autoCompleteEnd);
         }
 
         // 检查服务状态
@@ -647,56 +643,14 @@
             return [...stations.slice(0, 3), ...stations.slice(-3)];
         }
 
-        // 获取两点间的打车路线
-        function getDrivingRouteBetween(start, end) {
-            return new Promise((resolve, reject) => {
-                const driving = new AMap.Driving({ policy: 0 });
-                driving.search(
-                    [start.lng, start.lat],
-                    [end.lng, end.lat],
-                    function(status, result) {
-                        if (status === 'complete' && result.routes && result.routes.length > 0) {
-                            const route = result.routes[0];
-                            resolve({
-                                time: route.time,
-                                distance: route.distance,
-                                cost: Math.round(route.distance / 1000 * 3.5),
-                                type: 'driving'
-                            });
-                        } else {
-                            resolve(null);
-                        }
-                    }
-                );
-            });
-        }
-
-        // 获取两点间的地铁路线
-        function getTransitRouteBetween(start, end) {
-            return new Promise((resolve, reject) => {
-                const transit = new AMap.Transfer({ city: '北京' });
-                transit.search(
-                    [start.lng, start.lat],
-                    [end.lng, end.lat],
-                    function(status, result) {
-                        if (status === 'complete' && result.plans && result.plans.length > 0) {
-                            const plan = result.plans[0];
-                            resolve({
-                                time: plan.time,
-                                distance: plan.distance,
-                                cost: plan.cost || 3,
-                                type: 'transit'
-                            });
-                        } else {
-                            resolve(null);
-                        }
-                    }
-                );
-            });
-        }
-
         // 智能决策算法(包含混合方案)
         function makeSmartDecision(drivingData, transitData, mixedRoutes = []) {
+            const drivingTime = drivingData.time / 60;
+            const drivingCost = drivingData.cost;
+
+            const transitTime = transitData.time / 60;
+            const transitCost = transitData.cost;
+
             // 决策权重配置
             const weights = {
                 time: 0.4,      // 时间权重40%
@@ -704,64 +658,44 @@
                 comfort: 0.25   // 舒适度权重25%
             };
 
-            // 计算综合得分
-            function calculateScore(time, cost, comfort) {
-                const timeScore = Math.max(0, 100 - time * 2);
-                const costScore = Math.max(0, 100 - cost / 2);
-                return timeScore * weights.time + costScore * weights.cost + comfort * weights.comfort;
-            }
+            // 计算各项得分（0-100）
+            // 时间得分：越短越好
+            const timeScore = {
+                driving: Math.max(0, 100 - drivingTime * 2),
+                transit: Math.max(0, 100 - transitTime * 2)
+            };
 
-            // 所有方案
-            const allOptions = [
-                {
-                    type: 'driving',
-                    time: drivingData.time / 60,
-                    cost: drivingData.cost,
-                    comfort: 80,
-                    data: drivingData
-                },
-                {
-                    type: 'transit',
-                    time: transitData.time / 60,
-                    cost: transitData.cost,
-                    comfort: 60,
-                    data: transitData
-                },
-                ...mixedRoutes.map(route => ({
-                    type: 'mixed',
-                    subtype: route.type,
-                    station: route.station,
-                    time: route.totalTime,
-                    cost: route.totalCost,
-                    comfort: 70, // 混合方案舒适度介于两者之间
-                    data: route
-                }))
-            ];
+            // 费用得分：越低越好
+            const costScore = {
+                driving: Math.max(0, 100 - drivingCost / 2),
+                transit: Math.max(0, 100 - transitCost * 5)
+            };
 
-            // 计算每个方案的得分
-            allOptions.forEach(opt => {
-                opt.score = calculateScore(opt.time, opt.cost, opt.comfort);
-            });
+            // 舒适度得分
+            const comfortScore = {
+                driving: 80, // 打车舒适度固定80分
+                transit: 60  // 地铁舒适度固定60分（考虑拥挤、换乘等）
+            };
 
-            // 排序找出最优方案
-            allOptions.sort((a, b) => b.score - a.score);
-            const best = allOptions[0];
+            // 综合得分
+            const drivingScore =
+                timeScore.driving * weights.time +
+                costScore.driving * weights.cost +
+                comfortScore.driving * weights.comfort;
+
+            const transitScore =
+                timeScore.transit * weights.time +
+                costScore.transit * weights.cost +
+                comfortScore.transit * weights.comfort;
 
             // 生成推荐理由
             let reason = '';
-            let recommended = best.type;
+            let recommended = '';
 
-            if (best.type === 'mixed') {
-                if (best.subtype === 'taxi-transit') {
-                    reason = `推荐混合出行：先打车到${best.station}，然后换乘地铁。总时间${Math.round(best.time)}分钟，费用¥${Math.round(best.cost)}，性价比最优。`;
-                } else {
-                    reason = `推荐混合出行：先乘地铁到${best.station}，然后打车。总时间${Math.round(best.time)}分钟，费用¥${Math.round(best.cost)}，性价比最优。`;
-                }
-                recommended = 'mixed';
-            } else if (best.type === 'driving') {
-                const transitOption = allOptions.find(o => o.type === 'transit');
-                const timeDiff = Math.round(transitOption.time - best.time);
-                const costDiff = Math.round(best.cost - transitOption.cost);
+            if (drivingScore > transitScore) {
+                recommended = 'driving';
+                const timeDiff = Math.round(transitTime - drivingTime);
+                const costDiff = Math.round(drivingCost - transitCost);
 
                 if (timeDiff > 20) {
                     reason = `推荐打车。虽然费用多 ¥${costDiff}，但可节省 ${timeDiff} 分钟，性价比更高。`;
@@ -771,13 +705,13 @@
                     reason = `推荐打车。综合时间、费用和舒适度，打车是更优选择。`;
                 }
             } else {
-                const drivingOption = allOptions.find(o => o.type === 'driving');
-                const timeDiff = Math.round(drivingOption.time - best.time);
-                const costDiff = Math.round(drivingOption.cost - best.cost);
+                recommended = 'transit';
+                const timeDiff = Math.round(drivingTime - transitTime);
+                const costDiff = Math.round(drivingCost - transitCost);
 
                 if (costDiff > 50) {
                     reason = `推荐地铁。可节省 ¥${costDiff}，经济实惠。${timeDiff > 0 ? `时间仅多 ${timeDiff} 分钟。` : ''}`;
-                } else if (best.time < drivingOption.time) {
+                } else if (transitTime < drivingTime) {
                     reason = `推荐地铁。节省 ${timeDiff} 分钟，且费用更低，是最优选择。`;
                 } else {
                     reason = `推荐地铁。虽然时间略长，但费用低廉，适合日常通勤。`;
@@ -787,8 +721,10 @@
             return {
                 recommended,
                 reason,
-                bestOption: best,
-                allOptions
+                scores: {
+                    driving: Math.round(drivingScore),
+                    transit: Math.round(transitScore)
+                }
             };
         }
 
@@ -803,7 +739,7 @@
 
             const submitBtn = document.getElementById('submit-btn');
             submitBtn.disabled = true;
-            submitBtn.textContent = '智能分析中...';
+            submitBtn.textContent = '分析中...';
 
             // 清除之前的路线
             map.clearMap();
@@ -822,25 +758,17 @@
                 console.log('Driving result:', drivingResult);
                 console.log('Transit result:', transitResult);
 
-                // 计算混合方案
-                submitBtn.textContent = '计算混合方案...';
-                const mixedRoutes = await findOptimalMixedRoute(transitResult);
-                console.log('Mixed routes:', mixedRoutes);
-
                 // 进行智能决策
-                const decision = makeSmartDecision(drivingResult, transitResult, mixedRoutes);
+                const decision = makeSmartDecision(drivingResult, transitResult);
 
                 // 显示结果
-                displayDecision(decision, drivingResult, transitResult, mixedRoutes);
+                displayDecision(decision, drivingResult, transitResult);
 
                 // 绘制推荐路线
                 if (decision.recommended === 'driving') {
                     drawDrivingRoute(drivingResult.route);
-                } else if (decision.recommended === 'transit') {
+                } else {
                     drawTransitRoute(transitResult.plan);
-                } else if (decision.recommended === 'mixed') {
-                    // 绘制混合路线
-                    drawMixedRoute(decision.bestOption.data);
                 }
 
             } catch (error) {
@@ -896,7 +824,7 @@
             });
         }
 
-        function displayDecision(decision, drivingData, transitData, mixedRoutes = []) {
+        function displayDecision(decision, drivingData, transitData) {
             const resultsSection = document.getElementById('results-section');
             const resultsContent = document.getElementById('results-content');
 
@@ -908,20 +836,10 @@
             const transitDistance = (transitData.distance / 1000).toFixed(1);
             const transitCost = transitData.cost;
 
-            // 推荐标题和图标
-            let recommendTitle = '';
-            if (decision.recommended === 'mixed') {
-                recommendTitle = '🚗🚇 推荐混合出行';
-            } else if (decision.recommended === 'driving') {
-                recommendTitle = '🚗 推荐打车';
-            } else {
-                recommendTitle = '🚇 推荐地铁';
-            }
-
             const html = `
                 <div class="recommendation">
                     <div class="recommendation-title">
-                        ${recommendTitle}
+                        ${decision.recommended === 'driving' ? '🚗 推荐打车' : '🚇 推荐地铁'}
                     </div>
                     <div class="recommendation-reason">
                         ${decision.reason}
@@ -969,25 +887,6 @@
                         </div>
                     </div>
                 </div>
-
-                ${decision.recommended === 'mixed' && decision.bestOption ? `
-                    <div style="margin-top: 15px; padding: 15px; background: #f5f5f5; border: 2px solid #000000;">
-                        <div style="font-size: 11px; font-weight: 700; letter-spacing: 1px; margin-bottom: 10px; text-transform: uppercase;">
-                            混合方案详情
-                        </div>
-                        <div style="font-size: 13px; line-height: 1.6;">
-                            ${decision.bestOption.subtype === 'taxi-transit'
-                                ? `<strong>第一段:</strong> 打车到 ${decision.bestOption.station}<br>
-                                   <strong>第二段:</strong> 乘地铁到终点`
-                                : `<strong>第一段:</strong> 乘地铁到 ${decision.bestOption.station}<br>
-                                   <strong>第二段:</strong> 打车到终点`
-                            }
-                            <br><br>
-                            <strong>总时间:</strong> ${Math.round(decision.bestOption.time)}分钟<br>
-                            <strong>总费用:</strong> ¥${Math.round(decision.bestOption.cost)}
-                        </div>
-                    </div>
-                ` : ''}
             `;
 
             resultsContent.innerHTML = html;
@@ -1042,35 +941,15 @@
             map.setFitView([...allPaths, startMarker, endMarker]);
         }
 
-        // 绘制混合路线
-        function drawMixedRoute(mixedRoute) {
-            console.log('Drawing mixed route:', mixedRoute);
-
-            // 简化版本:只显示起终点连线,因为我们没有保存完整路径数据
-            // 在实际应用中,应该保存每段的完整路径信息
-            const path = [
-                [startLocation.lng, startLocation.lat],
-                [endLocation.lng, endLocation.lat]
-            ];
-
-            const polyline = new AMap.Polyline({
-                path: path,
-                strokeColor: '#FF6B00',  // 橙色表示混合方案
-                strokeWeight: 5,
-                strokeOpacity: 0.8,
-                strokeStyle: 'solid'
-            });
-
-            map.add(polyline);
-            map.setFitView([polyline, startMarker, endMarker]);
-        }
-
         // 初始化
         document.addEventListener('DOMContentLoaded', function() {
             console.log('DOM loaded, initializing...');
             initMap();
             checkStatus();
             setInterval(checkStatus, 30000);
+
+            setupAutocomplete('start-input', 'start-results', autoCompleteStart);
+            setupAutocomplete('end-input', 'end-results', autoCompleteEnd);
 
             document.getElementById('route-form').addEventListener('submit', planRoute);
         });
