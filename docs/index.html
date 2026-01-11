@@ -439,6 +439,10 @@
             });
 
             console.log('Map initialized successfully');
+
+            // 地图初始化完成后,设置自动完成
+            setupAutocomplete('start-input', 'start-results', autoCompleteStart);
+            setupAutocomplete('end-input', 'end-results', autoCompleteEnd);
         }
 
         // 检查服务状态
@@ -1067,9 +1071,6 @@
             initMap();
             checkStatus();
             setInterval(checkStatus, 30000);
-
-            setupAutocomplete('start-input', 'start-results', autoCompleteStart);
-            setupAutocomplete('end-input', 'end-results', autoCompleteEnd);
 
             document.getElementById('route-form').addEventListener('submit', planRoute);
         });
